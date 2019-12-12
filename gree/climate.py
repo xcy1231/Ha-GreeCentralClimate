@@ -49,6 +49,7 @@ SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
 
 DEFAULT_NAME = 'Gree Climate'
 
+BROADCAST_ADDRESS = '<broadcast>'
 DEFAULT_PORT = 7000
 DEFAULT_TARGET_TEMP_STEP = 1
 
@@ -63,7 +64,7 @@ FAN_MODES = [FAN_AUTO, FAN_LOW, 'medium-low', FAN_MIDDLE, 'medium-high', FAN_HIG
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_HOST): cv.string,
+    vol.Required(CONF_HOST, default=BROADCAST_ADDRESS): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=timedelta(seconds=30)): (
         vol.All(cv.time_period, cv.positive_timedelta)),
 })
@@ -141,7 +142,7 @@ class GreeBridge(object):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            self._socket.bind()
+            # self._socket.bind(('', DEFAULT_PORT))
         except:
             _LOGGER.error('creat socket error')
 
@@ -178,6 +179,8 @@ class GreeBridge(object):
                 jsonPack = ciperDecrypt(pack, self._key)
                 _LOGGER.info('Server received pack {}'.format(jsonPack))
                 if jsonPack['t'] == 'dev':
+                    (host,_) = address
+                    self._host = host
                     self.mid = jsonPack['mid']
                     self.mac = jsonPack['mac']
                     self.name = jsonPack['name']

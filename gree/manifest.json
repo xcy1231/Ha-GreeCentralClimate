@@ -1,0 +1,8 @@
+{
+    "domain": "gree",
+    "name": "Gree Central A/C",
+    "documentation": "https://github.com/xcy1231/Ha-GreeCentralClimate",
+    "dependencies": [],
+    "codeowners": ["@xcy1231"],
+    "requirements": ["pycryptodome"]
+  }

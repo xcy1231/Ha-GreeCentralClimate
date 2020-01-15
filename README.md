@@ -1,4 +1,11 @@
 # Ha-GreeCentralClimate
+格力中央空调Homeassistant插件，使用格力云控进行控制
+
+gree目录复制到custom_components，再在configuration.yaml中加上配置：
+```
+climate:
+  - platform: gree
+```
 
 # 参考
 [gree-hvac-mqtt-bridge](https://github.com/arthurkrupa/gree-hvac-mqtt-bridge)

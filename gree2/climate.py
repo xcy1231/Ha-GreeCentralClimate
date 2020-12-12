@@ -17,7 +17,7 @@ import homeassistant.util.dt as dt_util
 from datetime import datetime, timedelta
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.event import async_call_later
-from homeassistant.components.climate import (ClimateDevice, PLATFORM_SCHEMA)
+from homeassistant.components.climate import (ClimateEntity, PLATFORM_SCHEMA)
 
 from homeassistant.components.climate.const import (
     HVAC_MODE_OFF, HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_DRY,
@@ -192,9 +192,7 @@ class GreeBridge(object):
                     devList = jsonPack['list']
                     _LOGGER.info('Scan Gree climate device list: {}'.format(devList))
                     for item in devList:
-                        if item['name'] == self.name:
-                            continue
-                        greeClimate = GreeClimate(self.hass, item['name'], item['mid'], item['mac'], self)
+                        greeClimate = Gree2Climate(self.hass, item['name'] + item['mac'], item['mid'], item['mac'], self)
                         self.devList.append(greeClimate)
                     self.async_add_devices(self.devList)
                     if len(devList) == 0:
@@ -272,7 +270,7 @@ class GreeBridge(object):
         jsonPack = await self.socket_request(reqData)
         return jsonPack
 
-class GreeClimate(ClimateDevice):
+class Gree2Climate(ClimateEntity):
 
     def __init__(self, hass, name, mid, mac, bridge):
         _LOGGER.info('Initialize the GREE climate device')

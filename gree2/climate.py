@@ -115,6 +115,7 @@ class GreeBridge(object):
         self.name = None
         self.subCnt = None
         self.devList = []
+        self.uid = None
 
         self.start_listen()
         self.scan_broadcast()
@@ -174,6 +175,8 @@ class GreeBridge(object):
 
             _LOGGER.info('socket received from {}:{}'.format(address, data.decode('utf-8')))
             receivedJson = simplejson.loads(data)
+            if self.uid == None:
+                self.uid = receivedJson['uid']
             if 'pack' in receivedJson:
                 pack = receivedJson['pack']
                 jsonPack = ciperDecrypt(pack, self._key)
@@ -219,7 +222,7 @@ class GreeBridge(object):
             'cid': 'app',
             'i': i,
             't': 'pack',
-            'uid': 0,
+            'uid': self.uid,
             'pack': pack
         }
         self.socket_send(reqData)
@@ -233,7 +236,7 @@ class GreeBridge(object):
         message = {
             'mac': self.mac,
             't': 'bind',
-            'uid': 0
+            'uid': self.uid
         }
         self.socket_send_pack(message, 1)
 
@@ -264,7 +267,7 @@ class GreeBridge(object):
             'cid': 'app',
             'i': i,
             't': 'pack',
-            'uid': 0,
+            'uid': self.uid,
             'pack': pack
         }
         jsonPack = await self.socket_request(reqData)

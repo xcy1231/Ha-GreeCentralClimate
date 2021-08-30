@@ -215,15 +215,18 @@ class GreeBridge(object):
         _LOGGER.info('socket send data {} to {}'.format(reqData, self._host))
         self._socket.sendto(simplejson.dumps(reqData).encode('utf-8'), (self._host, DEFAULT_PORT))
 
-    def socket_send_pack(self, message, i=0):
+    def socket_send_pack(self, message, i=0, uid=None):
         _LOGGER.info('socket send pack {} to {}'.format(message, self._host))
+        if uid == None:
+            uid = self.uid
         pack = ciperEncrypt(message, self._key)
         reqData = {
             'cid': 'app',
             'i': i,
             't': 'pack',
-            'uid': self.uid,
-            'pack': pack
+            'uid': uid,
+            'pack': pack,
+            'tcid': self.mac
         }
         self.socket_send(reqData)
 
@@ -236,9 +239,9 @@ class GreeBridge(object):
         message = {
             'mac': self.mac,
             't': 'bind',
-            'uid': self.uid
+            'uid': 0
         }
-        self.socket_send_pack(message, 1)
+        self.socket_send_pack(message, 1, 0)
 
     def get_subdevices(self):
         message = {

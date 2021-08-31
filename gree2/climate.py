@@ -115,6 +115,7 @@ class GreeBridge(object):
         self.name = None
         self.subCnt = None
         self.devList = []
+        self.uid = None
 
         self.start_listen()
         self.scan_broadcast()
@@ -174,6 +175,8 @@ class GreeBridge(object):
 
             _LOGGER.info('socket received from {}:{}'.format(address, data.decode('utf-8')))
             receivedJson = simplejson.loads(data)
+            if self.uid == None:
+                self.uid = receivedJson['uid']
             if 'pack' in receivedJson:
                 pack = receivedJson['pack']
                 jsonPack = ciperDecrypt(pack, self._key)
@@ -212,15 +215,18 @@ class GreeBridge(object):
         _LOGGER.info('socket send data {} to {}'.format(reqData, self._host))
         self._socket.sendto(simplejson.dumps(reqData).encode('utf-8'), (self._host, DEFAULT_PORT))
 
-    def socket_send_pack(self, message, i=0):
+    def socket_send_pack(self, message, i=0, uid=None):
         _LOGGER.info('socket send pack {} to {}'.format(message, self._host))
+        if uid == None:
+            uid = self.uid
         pack = ciperEncrypt(message, self._key)
         reqData = {
             'cid': 'app',
             'i': i,
             't': 'pack',
-            'uid': 0,
-            'pack': pack
+            'uid': uid,
+            'pack': pack,
+            'tcid': self.mac
         }
         self.socket_send(reqData)
 
@@ -235,7 +241,7 @@ class GreeBridge(object):
             't': 'bind',
             'uid': 0
         }
-        self.socket_send_pack(message, 1)
+        self.socket_send_pack(message, 1, 0)
 
     def get_subdevices(self):
         message = {
@@ -264,7 +270,7 @@ class GreeBridge(object):
             'cid': 'app',
             'i': i,
             't': 'pack',
-            'uid': 0,
+            'uid': self.uid,
             'pack': pack
         }
         jsonPack = await self.socket_request(reqData)

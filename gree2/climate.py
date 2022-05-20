@@ -114,8 +114,8 @@ class GreeBridge(object):
         self.mac = None
         self.name = None
         self.subCnt = None
-        self.devList = []
         self.uid = None
+        self.devMap = {}
 
         self.start_listen()
         self.scan_broadcast()
@@ -148,7 +148,7 @@ class GreeBridge(object):
             _LOGGER.error('creat socket error')
 
     def get_all_state(self, now):
-        for climate in self.devList:
+        for climate in self.devMap.values():
             climate.syncStatus()
 
     def socket_listen(self):
@@ -187,6 +187,7 @@ class GreeBridge(object):
                     self.mid = jsonPack['mid']
                     self.mac = jsonPack['mac']
                     self.name = jsonPack['name']
+                    self.subCnt = jsonPack['subCnt']
                     self.bind_device()
                 elif jsonPack['t'] == 'bindOk':
                     self._key = jsonPack['key']
@@ -195,21 +196,23 @@ class GreeBridge(object):
                     devList = jsonPack['list']
                     _LOGGER.info('Scan Gree climate device list: {}'.format(devList))
                     for item in devList:
-                        greeClimate = Gree2Climate(self.hass, item['name'] + item['mac'], item['mid'], item['mac'], self)
-                        self.devList.append(greeClimate)
-                    self.async_add_devices(self.devList)
-                    if len(devList) == 0:
-                        self.stop_listen()
-                    else:
-                        async_track_time_interval(self.hass, self.get_all_state, self._scan_interval)
+                        if not item['mac'] in self.devMap.keys():
+                            self.devMap[item['mac']] = Gree2Climate(self.hass, item['name'] + item['mac'], item['mid'], item['mac'], self)
+                    if len(self.devMap) < self.subCnt and jsonPack['i'] < self.subCnt:
+                        self.get_subdevices(jsonPack['i'] + 1)
+                    else :
+                        subDevList = self.devMap.values()
+                        _LOGGER.info('All Gree climate device: {} subCnt: {}'.format(subDevList, len(self.devMap) ))
+                        self.async_add_devices(subDevList)
+                        if len(self.devMap) == 0:
+                            self.stop_listen()
+                        else:
+                            async_track_time_interval(self.hass, self.get_all_state, self._scan_interval)
+
                 elif jsonPack['t'] == 'dat':
-                    for climate in self.devList:
-                        if climate.mac == jsonPack['mac']:
-                            climate.dealStatusPack(jsonPack)
+                    self.devMap[jsonPack['mac']].dealStatusPack(jsonPack)
                 elif jsonPack['t'] == 'res':
-                    for climate in self.devList:
-                        if climate.mac == jsonPack['mac']:
-                            climate.dealResPack(jsonPack)
+                    self.devMap[jsonPack['mac']].dealResPack(jsonPack)
 
     def socket_send(self, reqData):
         _LOGGER.info('socket send data {} to {}'.format(reqData, self._host))
@@ -243,11 +246,11 @@ class GreeBridge(object):
         }
         self.socket_send_pack(message, 1, 0)
 
-    def get_subdevices(self):
+    def get_subdevices(self, i=0):
         message = {
             't': "subDev",
             'mac': self.mac,
-            'i': 0
+            'i': i,
         }
         self.socket_send_pack(message)
 
@@ -283,6 +286,8 @@ class Gree2Climate(ClimateEntity):
         self.hass = hass
         self.mac = mac
 
+        self._available = False
+
         self._name = name
         self._mid = mid
         
@@ -309,6 +314,11 @@ class Gree2Climate(ClimateEntity):
     def should_poll(self):
         # Return the polling state.
         return False
+
+    @property
+    def available(self):
+        # Return available of the climate device.
+        return self._available
 
     @property
     def name(self):
@@ -411,6 +421,7 @@ class Gree2Climate(ClimateEntity):
     
     def dealStatusPack(self, statusPack):
         if statusPack is not None:
+            self._available = True
             for i, val in enumerate(statusPack['cols']):
                 self._acOptions[val] = statusPack['dat'][i]
             _LOGGER.info('Climate {} status: {}'.format(self._name, self._acOptions))

@@ -31,8 +31,6 @@ from homeassistant.const import (
     STATE_ON, STATE_OFF, STATE_UNKNOWN, 
     TEMP_CELSIUS, PRECISION_WHOLE, PRECISION_TENTHS)
 
-from homeassistant.components.fan import SPEED_HIGH, SPEED_LOW, SPEED_MEDIUM
-
 from homeassistant.helpers.event import (async_track_state_change)
 from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity

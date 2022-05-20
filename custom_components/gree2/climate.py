@@ -284,6 +284,8 @@ class Gree2Climate(ClimateEntity):
         self.hass = hass
         self.mac = mac
 
+        self._unique_id = 'com.gree2.' + mac
+
         self._available = False
 
         self._name = name
@@ -312,6 +314,11 @@ class Gree2Climate(ClimateEntity):
     def should_poll(self):
         # Return the polling state.
         return False
+
+    @property
+    def unique_id(self) -> str:
+        # Return a unique ID.
+        return self._unique_id
 
     @property
     def available(self):

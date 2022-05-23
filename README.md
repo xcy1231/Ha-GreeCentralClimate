@@ -7,6 +7,13 @@ climate:
   - platform: gree2
 ```
 
+使用scan_interval可以自定义同步时间：
+```
+climate:
+  - platform: gree2
+    scan_interval: 20
+```
+
 效果图：
 ![image](./ha-gree.jpg)
 

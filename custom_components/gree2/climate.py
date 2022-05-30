@@ -431,14 +431,14 @@ class Gree2Climate(ClimateEntity):
                 self._acOptions[val] = statusPack['dat'][i]
             _LOGGER.info('Climate {} status: {}'.format(self._name, self._acOptions))
             self.UpdateHAStateToCurrentACState()
-            async_call_later(self.hass, 1, self.async_schedule_update_ha_state)
+            self.schedule_update_ha_state()
 
     def dealResPack(self, resPack):
         if resPack is not None:
             for i, val in enumerate(resPack['opt']):
                 self._acOptions[val] = resPack['val'][i]
             self.UpdateHAStateToCurrentACState()
-            async_call_later(self.hass, 1, self.async_schedule_update_ha_state)
+            self.schedule_update_ha_state()
 
     def syncState(self, options):
         commands = []

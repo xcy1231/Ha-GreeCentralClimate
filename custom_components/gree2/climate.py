@@ -257,31 +257,6 @@ class GreeBridge(object):
         }
         self.socket_send_pack(message)
 
-    async def socket_request(self, reqData):
-        _LOGGER.info('Server request data {}'.format(reqData))
-        self._socket.sendto(simplejson.dumps(reqData).encode('utf-8'), (self._host, DEFAULT_PORT))
-        data, address = self._socket.recvfrom(65535)
-        _LOGGER.info('Server received from {}:{}'.format(address, data.decode('utf-8')))
-        receivedJson = simplejson.loads(data)
-        if 'pack' in receivedJson:
-            pack = receivedJson['pack']
-            jsonPack = ciperDecrypt(pack, self._key)
-            _LOGGER.info('Server received json {}'.format(jsonPack))
-            return jsonPack
-
-    async def pack_request(self, message, i=0):
-        _LOGGER.info('Server request message {}'.format(message))
-        pack = ciperEncrypt(message, self._key)
-        reqData = {
-            'cid': 'app',
-            'i': i,
-            't': 'pack',
-            'uid': self.uid,
-            'pack': pack
-        }
-        jsonPack = await self.socket_request(reqData)
-        return jsonPack
-
 class Gree2Climate(ClimateEntity):
 
     def __init__(self, hass, name, mid, mac, bridge, temp_sensor):
@@ -419,7 +394,11 @@ class Gree2Climate(ClimateEntity):
         _LOGGER.info('set_hvac_mode(): ' + str(hvac_mode))
         # Set new operation mode.
         if (hvac_mode == HVAC_MODE_OFF):
-            self.syncState({'Pow': 0})
+            new_pow = 0 
+            if self._hvac_mode == HVAC_MODE_OFF:
+                new_pow = 1
+            _LOGGER.debug('set_hvac_mode, old hvac mode: {} new Pow: {}'.format(self._hvac_mode, new_pow) )
+            self.syncState({'Pow': new_pow})
         else:
             self.syncState({'Mod': self._hvac_modes.index(hvac_mode), 'Pow': 1})
 

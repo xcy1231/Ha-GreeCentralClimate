@@ -45,8 +45,9 @@ _LOGGER = logging.getLogger(__name__)
 
 SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
 
-DEFAULT_NAME = 'Gree Climate'
+CONF_TEMP_SENSOR = 'temp_sensor'
 
+DEFAULT_NAME = 'Gree Climate'
 BROADCAST_ADDRESS = '<broadcast>'
 DEFAULT_PORT = 7000
 DEFAULT_TARGET_TEMP_STEP = 1
@@ -65,6 +66,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST, default=BROADCAST_ADDRESS): cv.string,
     vol.Optional(CONF_SCAN_INTERVAL, default=timedelta(seconds=30)): (
         vol.All(cv.time_period, cv.positive_timedelta)),
+    vol.Optional(CONF_TEMP_SENSOR, default={}): {
+        cv.string: cv.entity_id
+    },
 })
 
 def Pad(s):
@@ -92,17 +96,17 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
     _LOGGER.info('Setting up Gree climate platform')
     name = config.get(CONF_NAME)
     ip_addr = config.get(CONF_HOST)
-    
     scan_interval = config.get(CONF_SCAN_INTERVAL)
-
-    bridge = GreeBridge(hass, ip_addr, scan_interval, async_add_devices)
+    temp_sensor = config.get(CONF_TEMP_SENSOR)
+    bridge = GreeBridge(hass, ip_addr, scan_interval, temp_sensor, async_add_devices)
 
 
 class GreeBridge(object):
-    def __init__(self, hass, host, scan_interval, async_add_devices):
+    def __init__(self, hass, host, scan_interval, temp_sensor, async_add_devices):
         self.hass = hass
         self.async_add_devices = async_add_devices
         self._scan_interval = scan_interval
+        self._temp_sensor = temp_sensor
         self._host = host
         self._socket = None
         self._listening = False
@@ -194,8 +198,9 @@ class GreeBridge(object):
                     devList = jsonPack['list']
                     _LOGGER.info('Scan Gree climate device list: {}'.format(devList))
                     for item in devList:
-                        if not item['mac'] in self.devMap.keys():
-                            self.devMap[item['mac']] = Gree2Climate(self.hass, item['name'] + item['mac'], item['mid'], item['mac'], self)
+                        item_mac = item['mac']
+                        if not item_mac in self.devMap.keys():
+                            self.devMap[item_mac] = Gree2Climate(self.hass, item['name'] + item_mac, item['mid'], item_mac, self, self._temp_sensor.get(item_mac))
                     if len(self.devMap) < self.subCnt and jsonPack['i'] < self.subCnt:
                         self.get_subdevices(jsonPack['i'] + 1)
                     else :
@@ -279,7 +284,7 @@ class GreeBridge(object):
 
 class Gree2Climate(ClimateEntity):
 
-    def __init__(self, hass, name, mid, mac, bridge):
+    def __init__(self, hass, name, mid, mac, bridge, temp_sensor):
         _LOGGER.info('Initialize the GREE climate device')
         self.hass = hass
         self.mac = mac
@@ -304,12 +309,20 @@ class Gree2Climate(ClimateEntity):
         self._hvac_modes = HVAC_MODES
         self._fan_modes = FAN_MODES
 
+        self._temp_sensor = temp_sensor
+        if temp_sensor:
+            async_track_state_change(hass, temp_sensor, self._async_temp_sensor_changed)
+            temp_state = hass.states.get(temp_sensor)
+            if temp_state:
+                self._async_update_current_temp(temp_state)
+
         self._acOptions = {
             'Pow': 0,
             'Mod': str(self._hvac_mode.index(HVAC_MODE_OFF)),
             'WdSpd': 0,
             'SetTem': 26,
         }
+        
     @property
     def should_poll(self):
         # Return the polling state.
@@ -480,3 +493,25 @@ class Gree2Climate(ClimateEntity):
         self.UpdateHATargetTemperature()
         self.UpdateHAHvacMode()
         self.UpdateHAFanMode()
+
+    @callback
+    def _async_update_current_temp(self, state):
+        try:
+            float(state.state)
+            pass
+        except ValueError:
+            return
+        """Update thermostat with latest state from sensor."""
+        try:
+            self._current_temperature = self.hass.config.units.temperature(
+                float(state.state), self._unit_of_measurement)
+        except ValueError as ex:
+            _LOGGER.error('Unable to update from sensor: %s', ex)
+
+    @asyncio.coroutine
+    def _async_temp_sensor_changed(self, entity_id, old_state, new_state):
+        _LOGGER.info('temp_sensor state changed |' + str(entity_id) + '|' + str(old_state) + '|' + str(new_state))
+        if new_state is None:
+            return
+        self._async_update_current_temp(new_state)
+        self.schedule_update_ha_state()

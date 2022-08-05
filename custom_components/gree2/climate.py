@@ -174,9 +174,12 @@ class GreeBridge(object):
                 else:
                     _LOGGER.error("unknown error when recv", exc_info=e)
                 continue
+            try:
+                _LOGGER.info('socket received from {}:{}'.format(address, data.decode('utf-8', 'ignore')))
+                receivedJson = simplejson.loads(data)
+            except:
+                continue
 
-            _LOGGER.info('socket received from {}:{}'.format(address, data.decode('utf-8')))
-            receivedJson = simplejson.loads(data)
             if self.uid == None:
                 self.uid = receivedJson['uid']
             if 'pack' in receivedJson:
@@ -314,6 +317,11 @@ class Gree2Climate(ClimateEntity):
         return self._available
 
     @property
+    def hidden(self):
+        # Return hidden of the climate device.
+        return not self._available
+
+    @property
     def name(self):
         # Return the name of the climate device.
         return self._name
@@ -423,14 +431,14 @@ class Gree2Climate(ClimateEntity):
                 self._acOptions[val] = statusPack['dat'][i]
             _LOGGER.info('Climate {} status: {}'.format(self._name, self._acOptions))
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            self.async_write_ha_state()
 
     def dealResPack(self, resPack):
         if resPack is not None:
             for i, val in enumerate(resPack['opt']):
                 self._acOptions[val] = resPack['val'][i]
             self.UpdateHAStateToCurrentACState()
-            self.schedule_update_ha_state()
+            self.async_write_ha_state()
 
     def syncState(self, options):
         commands = []
@@ -493,4 +501,4 @@ class Gree2Climate(ClimateEntity):
         if new_state is None:
             return
         self._async_update_current_temp(new_state)
-        self.schedule_update_ha_state()
+        self.async_write_ha_state()

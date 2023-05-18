@@ -203,7 +203,7 @@ class GreeBridge(object):
                     for item in devList:
                         item_mac = item['mac']
                         if not item_mac in self.devMap.keys():
-                            self.devMap[item_mac] = Gree2Climate(self.hass, item['name'] + item_mac, item['mid'], item_mac, self, self._temp_sensor.get(item_mac))
+                            self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Climate' + item_mac.rstrip('0'), item['mid'], item_mac, self, self._temp_sensor.get(item_mac))
                     if len(self.devMap) < self.subCnt and jsonPack['i'] < self.subCnt:
                         self.get_subdevices(jsonPack['i'] + 1)
                     else :

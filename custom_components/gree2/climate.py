@@ -23,6 +23,7 @@ from homeassistant.components.climate.const import (
     HVAC_MODE_OFF, HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_DRY,
     HVAC_MODE_FAN_ONLY, HVAC_MODE_HEAT, SUPPORT_FAN_MODE,
     FAN_AUTO, FAN_LOW, FAN_MIDDLE, FAN_HIGH,
+    PRESET_NONE, PRESET_SLEEP,
     SUPPORT_TARGET_TEMPERATURE, SUPPORT_SWING_MODE, SUPPORT_PRESET_MODE)
 
 from homeassistant.const import (
@@ -43,7 +44,7 @@ REQUIREMENTS = ['pycryptodome']
 
 _LOGGER = logging.getLogger(__name__)
 
-SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE
+SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE | SUPPORT_PRESET_MODE
 
 CONF_TEMP_SENSOR = 'temp_sensor'
 
@@ -58,8 +59,8 @@ MAX_TEMP = 30
 
 # fixed values in gree mode lists
 HVAC_MODES = [HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_DRY, HVAC_MODE_FAN_ONLY, HVAC_MODE_HEAT, HVAC_MODE_OFF]
-
 FAN_MODES = [FAN_AUTO, FAN_LOW, 'medium-low', FAN_MIDDLE, 'medium-high', FAN_HIGH]
+PRESET_MODES = [PRESET_NONE, PRESET_SLEEP]
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
@@ -283,9 +284,11 @@ class Gree2Climate(ClimateEntity):
         self._target_temperature_step = DEFAULT_TARGET_TEMP_STEP
         self._hvac_mode = HVAC_MODE_OFF
         self._fan_mode = FAN_AUTO
+        self._preset_mode = PRESET_NONE
 
         self._hvac_modes = HVAC_MODES
         self._fan_modes = FAN_MODES
+        self._preset_modes = PRESET_MODES
 
         self._temp_sensor = temp_sensor
         if temp_sensor:
@@ -377,6 +380,18 @@ class Gree2Climate(ClimateEntity):
         return self._fan_modes
 
     @property
+    def preset_mode(self):
+        # Return the preset mode.
+        if self._acOptions['SwhSlp'] != 0:
+            return PRESET_SLEEP
+        return PRESET_NONE
+
+    @property
+    def preset_modes(self):
+        # Return the list of available preset modes.
+        return self._preset_modes
+
+    @property
     def supported_features(self):
         # Return the list of supported features.
         return SUPPORT_FLAGS        
@@ -409,6 +424,19 @@ class Gree2Climate(ClimateEntity):
             self.syncState({'Pow': new_pow})
         else:
             self.syncState({'Mod': self._hvac_modes.index(hvac_mode), 'Pow': 1})
+
+    def set_preset_mode(self, preset_mode):
+        _LOGGER.info('set_preset_mode(): ' + str(preset_mode))
+        # Set the fan mode.
+        if self._acOptions['Pow'] == 0:
+            return
+
+        if preset_mode == PRESET_SLEEP:
+            _LOGGER.info('Setting SwhSlp mode to 1')
+            self.syncState({'SwhSlp': 1, 'Quiet': 1})
+            return
+
+        self.syncState({'SwhSlp': 0, 'Quiet': 0})
 
     @asyncio.coroutine
     async def async_added_to_hass(self):

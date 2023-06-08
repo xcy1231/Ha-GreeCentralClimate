@@ -438,7 +438,6 @@ class Gree2Climate(ClimateEntity):
 
         self.syncState({'SwhSlp': 0, 'Quiet': 0})
 
-    @asyncio.coroutine
     async def async_added_to_hass(self):
         _LOGGER.info('Gree climate device added to hass()')
         self.syncStatus()
@@ -523,8 +522,7 @@ class Gree2Climate(ClimateEntity):
         except ValueError as ex:
             _LOGGER.error('Unable to update from sensor: %s', ex)
 
-    @asyncio.coroutine
-    def _async_temp_sensor_changed(self, entity_id, old_state, new_state):
+    async def _async_temp_sensor_changed(self, entity_id, old_state, new_state):
         _LOGGER.info('temp_sensor state changed |' + str(entity_id) + '|' + str(old_state) + '|' + str(new_state))
         if new_state is None:
             return

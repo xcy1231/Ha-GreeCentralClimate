@@ -416,14 +416,17 @@ class Gree2Climate(ClimateEntity):
     def set_hvac_mode(self, hvac_mode):
         _LOGGER.info('set_hvac_mode(): ' + str(hvac_mode))
         # Set new operation mode.
-        if (hvac_mode == HVAC_MODE_OFF):
-            new_pow = 0 
-            if self._hvac_mode == HVAC_MODE_OFF:
-                new_pow = 1
-            _LOGGER.debug('set_hvac_mode, old hvac mode: {} new Pow: {}'.format(self._hvac_mode, new_pow) )
-            self.syncState({'Pow': new_pow})
-        else:
+        if hvac_mode != HVAC_MODE_OFF:
             self.syncState({'Mod': self._hvac_modes.index(hvac_mode), 'Pow': 1})
+            return
+
+        if self._hvac_mode == HVAC_MODE_OFF:
+            return
+
+        new_pow = 0
+        _LOGGER.debug('set_hvac_mode, old hvac mode: {} new Pow: {}'.format(self._hvac_mode, new_pow) )
+        self.syncState({'Pow': new_pow})
+        return
 
     def set_preset_mode(self, preset_mode):
         _LOGGER.info('set_preset_mode(): ' + str(preset_mode))

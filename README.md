@@ -32,12 +32,12 @@ climate:
 ```
 climate:
   - platform: gree2
-     temp_sensor:
+    temp_sensor:
        climate_mac_1: sensor_entity_id_1
        climate_mac_2: sensor_entity_id_2
 ```
 
-```climate_mac``` 为空调名称格力空调后的一串子母数字，做过名称自定义的可能看不到，但是可以找到空调实体ID的最后一段，```sensor_entity```为温度传感器的实体ID```entity_id```
+```climate_mac``` 为空调名称格力空调后的一串字母数字，做过名称自定义的可能看不到，但是可以找到空调实体ID的最后一段，```sensor_entity```为温度传感器的实体ID```entity_id```
 
 <center>
 	<img src="./climate-mac-1.jpg" width="300"/>

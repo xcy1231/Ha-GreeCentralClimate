@@ -86,7 +86,7 @@ class GreeBridge(object):
                         socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                     self.device_socket.settimeout(30)
                 except:
-                    _LOGGER.error('creat device socket error')
+                    _LOGGER.debug('creat device socket error')
                     self.device_socket.close()
                     self.device_socket = None
                     time.sleep(0.5)
@@ -94,7 +94,7 @@ class GreeBridge(object):
             try:
                 data, address = self.device_socket.recvfrom(65535)
             except Exception as e:
-                _LOGGER.error(
+                _LOGGER.debug(
                     'Device socket received error: {}'.format(str(e)))
                 if self.fake_socket is None:
                     self.reset()
@@ -118,7 +118,7 @@ class GreeBridge(object):
                     fake_socket.settimeout(30)
                     fake_socket.connect(('dis.gree.com', 1812))
                 except:
-                    _LOGGER.error('connect fake server error')
+                    _LOGGER.debug('connect fake server error')
                     fake_socket.close()
                     time.sleep(30)
                     continue
@@ -126,7 +126,7 @@ class GreeBridge(object):
             try:
                 data, _ = self.fake_socket.recvfrom(65535)
             except Exception as e:
-                _LOGGER.error('Fake socket received error: {}'.format(str(e)))
+                _LOGGER.debug('Fake socket received error: {}'.format(str(e)))
                 self.reset()
                 continue
             self.fc_unready = False

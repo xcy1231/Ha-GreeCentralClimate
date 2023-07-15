@@ -120,6 +120,7 @@ class GreeBridge(object):
                 except:
                     _LOGGER.debug('connect fake server error')
                     fake_socket.close()
+                    fake_socket = None
                     time.sleep(30)
                     continue
                 self.fake_socket = fake_socket

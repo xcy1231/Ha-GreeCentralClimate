@@ -136,6 +136,7 @@ class FakeServer:
         _LOGGER.debug('    App pack received: {} host: {}'.format(msg, conn))
         (host, _) = conn.getpeername()
         if host in self.haMap.keys():
+            msg = msg + b'\n'
             _LOGGER.debug(
                 '    App pack: {} send to host: {}'.format(msg, conn))
             conn = self.haMap[host]
@@ -177,5 +178,4 @@ class FakeServer:
                     self.cmd_pas(msg, conn)
 
         except Exception as e:
-            _LOGGER.info(
-                '* Exception: {} on message {}'.format(e, str(data)))
+            _LOGGER.info('* Exception: {} on message {}'.format(e, str(data)))

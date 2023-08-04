@@ -20,7 +20,6 @@ from homeassistant.const import (
 _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_PORT = 7000
-DEFAULT_TARGET_TEMP_STEP = 1
 
 # from the remote control and gree app
 MIN_TEMP = 16
@@ -38,7 +37,7 @@ SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE | SUPPORT_PRESET_M
 
 class Gree2Climate(ClimateEntity):
 
-    def __init__(self, hass, name, mac, bridge, temp_sensor):
+    def __init__(self, hass, name, mac, bridge, temp_sensor, temp_step):
         _LOGGER.info('Initialize the GREE climate device')
         self.hass = hass
         self.mac = mac
@@ -55,7 +54,7 @@ class Gree2Climate(ClimateEntity):
 
         self._target_temperature = 26
         self._current_temperature = 26
-        self._target_temperature_step = DEFAULT_TARGET_TEMP_STEP
+        self._target_temperature_step = temp_step
         self._hvac_mode = HVAC_MODE_OFF
         self._fan_mode = FAN_AUTO
         self._preset_mode = PRESET_NONE
@@ -181,7 +180,7 @@ class Gree2Climate(ClimateEntity):
                 # do nothing if HVAC is switched off
                 _LOGGER.info('syncState with SetTem=' +
                              str(kwargs.get(ATTR_TEMPERATURE)))
-                self.syncState({'SetTem': int(kwargs.get(ATTR_TEMPERATURE))})
+                self.syncState({'SetTem': float(kwargs.get(ATTR_TEMPERATURE))})
 
     def set_fan_mode(self, fan):
         _LOGGER.info('set_fan_mode(): ' + str(fan))
@@ -249,7 +248,10 @@ class Gree2Climate(ClimateEntity):
         values = []
         for cmd in options.keys():
             commands.append(cmd)
-            values.append(int(options[cmd]))
+            if cmd == 'SetTem':
+                values.append(float(options[cmd]))
+            else:
+                values.append(int(options[cmd]))
         message = {
             'opt': commands,
             'p': values,

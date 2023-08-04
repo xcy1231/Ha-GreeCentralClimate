@@ -19,11 +19,12 @@ RSET_COUNT = 4
 
 
 class GreeBridge(object):
-    def __init__(self, hass, host, scan_interval, temp_sensor, async_add_devices):
+    def __init__(self, hass, host, scan_interval, temp_sensor, temp_step, async_add_devices):
         self.hass = hass
         self.async_add_devices = async_add_devices
         self.scan_interval = scan_interval
         self.temp_sensor = temp_sensor
+        self.temp_step = temp_step
         self.conf_host = host
         self.host = host
         self.device_socket = None
@@ -58,7 +59,7 @@ class GreeBridge(object):
             self.host = dic['host']
             for item_mac in dic['sub']:
                 self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Climate_' +
-                                                     item_mac, item_mac, self, self.temp_sensor.get(item_mac))
+                                                     item_mac, item_mac, self, self.temp_sensor.get(item_mac), self.temp_step)
             self.async_add_devices(self.devMap.values())
             _LOGGER.debug('Load stored dic: {} path:{} devMap:{}'.format(
                 dic, self.store.path, self.devMap))
@@ -101,7 +102,9 @@ class GreeBridge(object):
                 continue
             (host, _) = address
             self.host = host
-            self.process(data)
+            lines = data.splitlines()
+            for message in lines:
+                self.process(message)
 
     def start_fake_listen(self):
         thread = threading.Thread(target=self.fake_listen, args=())
@@ -111,6 +114,7 @@ class GreeBridge(object):
     def fake_listen(self):
         while True:
             if self.fake_socket is None:
+                self.fc_unready = True
                 fake_socket = None
                 try:
                     fake_socket = socket.socket(
@@ -125,13 +129,19 @@ class GreeBridge(object):
                     continue
                 self.fake_socket = fake_socket
             try:
+                self.fake_socket.settimeout(30)
                 data, _ = self.fake_socket.recvfrom(65535)
+            except (ConnectionResetError, BrokenPipeError) as e:
+                self.fake_socket = None
+                continue
             except Exception as e:
                 _LOGGER.debug('Fake socket received error: {}'.format(str(e)))
                 self.reset()
                 continue
             self.fc_unready = False
-            self.process(data)
+            lines = data.splitlines()
+            for message in lines:
+                self.process(message)
 
     def reset(self):
         _LOGGER.debug(
@@ -216,7 +226,7 @@ class GreeBridge(object):
             item_mac = item['mac']
             if not item_mac in self.devMap.keys():
                 self.devMap[item_mac] = Gree2Climate(self.hass, 'GREE Climate_' +
-                                                     item_mac, item_mac, self, self.temp_sensor.get(item_mac))
+                                                     item_mac, item_mac, self, self.temp_sensor.get(item_mac), self.temp_step)
         if len(self.devMap) < self.subCnt and msg['i'] < self.subCnt:
             self.get_subdevices(msg['i'] + 1)
         else:
@@ -268,11 +278,19 @@ class GreeBridge(object):
         _LOGGER.debug('cmd send status data: {}'.format(data))
         if self.fake_socket is not None:
             _LOGGER.debug('cmd send status to fake server')
-            self.fake_socket.sendall((json.dumps({
-                't': 'pas',
-                'host': self.host,
-                'req': msg
-            }) + '\n').encode('utf-8'))
+            try:
+                self.fake_socket.sendall((json.dumps({
+                    't': 'pas',
+                    'host': self.host,
+                    'req': msg
+                }) + '\n').encode('utf-8'))
+            except BrokenPipeError as e:
+                _LOGGER.error(
+                    'Exception BrokenPipeError {} when send status to fake server'.format(e))
+                self.fake_socket = None
+            except Exception as e:
+                _LOGGER.debug(
+                    'Exception {} when send status to fake server'.format(e))
         if self.fc_unready == True and self.reset_count < RSET_COUNT:
             _LOGGER.debug('cmd send status directly')
             self.socket_send(msg)

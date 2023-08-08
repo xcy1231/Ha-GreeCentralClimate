@@ -171,6 +171,16 @@ class Gree2Climate(ClimateEntity):
         # Return the list of supported features.
         return SUPPORT_FLAGS
 
+    def turn_on(self):
+        _LOGGER.info('turn_on(): ')
+        # Turn on.
+        self.SyncState({'Pow': 1})
+
+    def turn_off(self):
+        _LOGGER.info('turn_off(): ')
+        # Turn on.
+        self.SyncState({'Pow': 0})
+
     def set_temperature(self, **kwargs):
         _LOGGER.info('set_temperature(): ' + str(kwargs.get(ATTR_TEMPERATURE)))
         # Set new target temperatures.
@@ -180,7 +190,8 @@ class Gree2Climate(ClimateEntity):
                 # do nothing if HVAC is switched off
                 _LOGGER.info('syncState with SetTem=' +
                              str(kwargs.get(ATTR_TEMPERATURE)))
-                self.syncState({'SetTem': float(kwargs.get(ATTR_TEMPERATURE))})
+                tem, decimal = str(kwargs.get(ATTR_TEMPERATURE)).split('.')
+                self.syncState({'SetTem': int(tem), 'Add0.1': int(decimal)})
 
     def set_fan_mode(self, fan):
         _LOGGER.info('set_fan_mode(): ' + str(fan))
@@ -218,7 +229,7 @@ class Gree2Climate(ClimateEntity):
 
     def syncStatus(self, now=None):
         cmds = ['Pow', 'Mod', 'SetTem', 'WdSpd', 'Air', 'Blo',
-                'Health', 'SwhSlp', 'SwingLfRig', 'Quiet', 'SvSt']
+                'Health', 'SwhSlp', 'SwingLfRig', 'Quiet', 'SvSt', 'Add0.1']
         message = {
             'cols': cmds,
             'mac': self.mac,
@@ -248,10 +259,7 @@ class Gree2Climate(ClimateEntity):
         values = []
         for cmd in options.keys():
             commands.append(cmd)
-            if cmd == 'SetTem':
-                values.append(float(options[cmd]))
-            else:
-                values.append(int(options[cmd]))
+            values.append(int(options[cmd]))
         message = {
             'opt': commands,
             'p': values,
@@ -262,9 +270,13 @@ class Gree2Climate(ClimateEntity):
 
     def UpdateHATargetTemperature(self):
         # Sync set temperature to HA
-        self._target_temperature = self._acOptions['SetTem']
+        tem = int(self._acOptions['SetTem'])
+        decimal = self._acOptions['Add0.1']
+        if decimal:
+            tem = tem + int(decimal) * 0.1
+        self._target_temperature = tem
         _LOGGER.info('{} HA target temp set according to HVAC state to: {}'.format(
-            self._name, str(self._acOptions['SetTem'])))
+            self._name, str(tem)))
 
     def UpdateHAHvacMode(self):
         # Sync current HVAC operation mode to HA

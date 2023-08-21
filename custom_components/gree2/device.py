@@ -271,9 +271,10 @@ class Gree2Climate(ClimateEntity):
     def UpdateHATargetTemperature(self):
         # Sync set temperature to HA
         tem = int(self._acOptions['SetTem'])
-        decimal = self._acOptions['Add0.1']
-        if decimal:
-            tem = tem + int(decimal) * 0.1
+        if 'Add0.1' in self._acOptions:
+            decimal = self._acOptions['Add0.1']
+            if decimal:
+                tem = tem + int(decimal) * 0.1
         self._target_temperature = tem
         _LOGGER.info('{} HA target temp set according to HVAC state to: {}'.format(
             self._name, str(tem)))

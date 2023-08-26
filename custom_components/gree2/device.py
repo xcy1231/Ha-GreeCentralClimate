@@ -174,12 +174,12 @@ class Gree2Climate(ClimateEntity):
     def turn_on(self):
         _LOGGER.info('turn_on(): ')
         # Turn on.
-        self.SyncState({'Pow': 1})
+        self.syncState({'Pow': 1})
 
     def turn_off(self):
         _LOGGER.info('turn_off(): ')
         # Turn on.
-        self.SyncState({'Pow': 0})
+        self.syncState({'Pow': 0})
 
     def set_temperature(self, **kwargs):
         _LOGGER.info('set_temperature(): ' + str(kwargs.get(ATTR_TEMPERATURE)))

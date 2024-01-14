@@ -5,17 +5,15 @@ from homeassistant.components.climate import ClimateEntity
 from homeassistant.helpers.event import async_track_state_change
 
 from homeassistant.components.climate.const import (
-    HVAC_MODE_OFF, HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_DRY,
-    HVAC_MODE_FAN_ONLY, HVAC_MODE_HEAT, SUPPORT_FAN_MODE,
+    HVACMode, ClimateEntityFeature,
     FAN_AUTO, FAN_LOW, FAN_MIDDLE, FAN_HIGH,
-    PRESET_NONE, PRESET_SLEEP,
-    SUPPORT_TARGET_TEMPERATURE, SUPPORT_PRESET_MODE)
+    PRESET_NONE, PRESET_SLEEP)
 
 from homeassistant.const import (
     ATTR_UNIT_OF_MEASUREMENT, ATTR_TEMPERATURE, CONF_SCAN_INTERVAL,
     CONF_NAME, CONF_HOST, CONF_PORT, CONF_MAC, CONF_TIMEOUT, CONF_CUSTOMIZE,
     STATE_ON, STATE_OFF, STATE_UNKNOWN,
-    TEMP_CELSIUS, PRECISION_WHOLE, PRECISION_TENTHS)
+    UnitOfTemperature, PRECISION_WHOLE, PRECISION_TENTHS)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,13 +24,13 @@ MIN_TEMP = 16
 MAX_TEMP = 30
 
 # fixed values in gree mode lists
-HVAC_MODES = [HVAC_MODE_AUTO, HVAC_MODE_COOL, HVAC_MODE_DRY,
-              HVAC_MODE_FAN_ONLY, HVAC_MODE_HEAT, HVAC_MODE_OFF]
+HVAC_MODES = [HVACMode.AUTO, HVACMode.COOL, HVACMode.DRY,
+              HVACMode.FAN_ONLY, HVACMode.HEAT, HVACMode.OFF]
 FAN_MODES = [FAN_AUTO, FAN_LOW, 'medium-low',
              FAN_MIDDLE, 'medium-high', FAN_HIGH]
 PRESET_MODES = [PRESET_NONE, PRESET_SLEEP]
 
-SUPPORT_FLAGS = SUPPORT_TARGET_TEMPERATURE | SUPPORT_FAN_MODE | SUPPORT_PRESET_MODE
+SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE
 
 
 class Gree2Climate(ClimateEntity):
@@ -55,7 +53,7 @@ class Gree2Climate(ClimateEntity):
         self._target_temperature = 26
         self._current_temperature = 26
         self._target_temperature_step = temp_step
-        self._hvac_mode = HVAC_MODE_OFF
+        self._hvac_mode = HVACMode.OFF
         self._fan_mode = FAN_AUTO
         self._preset_mode = PRESET_NONE
 
@@ -73,7 +71,7 @@ class Gree2Climate(ClimateEntity):
 
         self._acOptions = {
             'Pow': 0,
-            'Mod': str(self._hvac_mode.index(HVAC_MODE_OFF)),
+            'Mod': str(self._hvac_mode.index(HVACMode.OFF)),
             'WdSpd': 0,
             'SetTem': 26,
             'SwhSlp': 0,
@@ -204,7 +202,7 @@ class Gree2Climate(ClimateEntity):
     def set_hvac_mode(self, hvac_mode):
         _LOGGER.info('set_hvac_mode(): ' + str(hvac_mode))
         # Set new operation mode.
-        if (hvac_mode == HVAC_MODE_OFF):
+        if (hvac_mode == HVACMode.OFF):
             self.syncState({'Pow': 0})
         else:
             self.syncState(
@@ -282,7 +280,7 @@ class Gree2Climate(ClimateEntity):
     def UpdateHAHvacMode(self):
         # Sync current HVAC operation mode to HA
         if (self._acOptions['Pow'] == 0):
-            self._hvac_mode = HVAC_MODE_OFF
+            self._hvac_mode = HVACMode.OFF
         else:
             self._hvac_mode = self._hvac_modes[self._acOptions['Mod']]
         _LOGGER.info('{} HA operation mode set according to HVAC state to: {}'.format(

@@ -243,14 +243,14 @@ class Gree2Climate(ClimateEntity):
             _LOGGER.info('Climate {} status: {}'.format(
                 self._name, self._acOptions))
             self.UpdateHAStateToCurrentACState()
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()
 
     def dealResPack(self, resPack):
         if resPack is not None:
             for i, val in enumerate(resPack['opt']):
                 self._acOptions[val] = resPack['val'][i]
             self.UpdateHAStateToCurrentACState()
-            self.async_write_ha_state()
+            self.schedule_update_ha_state()
 
     def syncState(self, options):
         commands = []
@@ -322,4 +322,4 @@ class Gree2Climate(ClimateEntity):
         if new_state is None:
             return
         self._async_update_current_temp(new_state)
-        self.async_write_ha_state()
+        self.schedule_update_ha_state()

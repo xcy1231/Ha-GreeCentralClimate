@@ -1,4 +1,5 @@
 import logging
+import asyncio
 
 from homeassistant.core import callback
 from homeassistant.components.climate import ClimateEntity
@@ -30,7 +31,7 @@ FAN_MODES = [FAN_AUTO, FAN_LOW, 'medium-low',
              FAN_MIDDLE, 'medium-high', FAN_HIGH]
 PRESET_MODES = [PRESET_NONE, PRESET_SLEEP]
 
-SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE
+SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TURN_OFF
 
 
 class Gree2Climate(ClimateEntity):

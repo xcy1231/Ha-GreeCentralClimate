@@ -66,7 +66,7 @@ class FakeServer:
                 time.sleep(0.5)
             except Exception as e:
                 _LOGGER.info(
-                    '* Connection Exception: {} on message: {}'.format(e, str(data)))
+                    '* Connection Exception: {}'.format(e))
                 keep_alive = False
         conn.close()
         if host in self.connMap.keys():

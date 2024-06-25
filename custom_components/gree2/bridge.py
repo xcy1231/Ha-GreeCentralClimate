@@ -132,6 +132,7 @@ class GreeBridge(object):
                 self.fake_socket.settimeout(30)
                 data, _ = self.fake_socket.recvfrom(65535)
             except (ConnectionResetError, BrokenPipeError) as e:
+                _LOGGER.error('Fake socket received ConnectionResetError or BrokenPipeError: {}'.format(str(e)))
                 self.fake_socket = None
                 continue
             except Exception as e:

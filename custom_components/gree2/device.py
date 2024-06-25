@@ -1,9 +1,9 @@
 import logging
 import asyncio
 
-from homeassistant.core import callback
+from homeassistant.core import Event, EventStateChangedData, callback
 from homeassistant.components.climate import ClimateEntity
-from homeassistant.helpers.event import async_track_state_change
+from homeassistant.helpers.event import async_track_state_change_event
 
 from homeassistant.components.climate.const import (
     HVACMode, ClimateEntityFeature,
@@ -31,7 +31,7 @@ FAN_MODES = [FAN_AUTO, FAN_LOW, 'medium-low',
              FAN_MIDDLE, 'medium-high', FAN_HIGH]
 PRESET_MODES = [PRESET_NONE, PRESET_SLEEP]
 
-SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TURN_OFF
+SUPPORT_FLAGS = ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
 
 
 class Gree2Climate(ClimateEntity):
@@ -64,7 +64,7 @@ class Gree2Climate(ClimateEntity):
 
         self._temp_sensor = temp_sensor
         if temp_sensor:
-            async_track_state_change(
+            async_track_state_change_event(
                 hass, temp_sensor, self._async_temp_sensor_changed)
             temp_state = hass.states.get(temp_sensor)
             if temp_state:
@@ -316,8 +316,11 @@ class Gree2Climate(ClimateEntity):
                 float(state.state), self._unit_of_measurement)
         except ValueError as ex:
             _LOGGER.error('Unable to update from sensor: %s', ex)
-
-    async def _async_temp_sensor_changed(self, entity_id, old_state, new_state):
+    @callback
+    def _async_temp_sensor_changed(self, event: Event[EventStateChangedData]):
+        entity_id = event.data["entity_id"]
+        old_state = event.data["old_state"]
+        new_state = event.data["new_state"]
         _LOGGER.info('temp_sensor state changed |' + str(entity_id) +
                      '|' + str(old_state) + '|' + str(new_state))
         if new_state is None:

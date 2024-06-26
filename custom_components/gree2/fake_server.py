@@ -5,7 +5,6 @@ import socket
 import sys
 import threading
 import logging
-import datetime
 import time
 
 from .ciper import (CIPER_KEY, ciperEncrypt, ciperDecrypt)

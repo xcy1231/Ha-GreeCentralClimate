@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import (datetime, timedelta)
 import base64
 import json
 import socket
@@ -6,14 +6,16 @@ import sys
 import threading
 import logging
 import time
-
+from homeassistant.helpers.event import (
+    async_track_time_interval )
 from .ciper import (CIPER_KEY, ciperEncrypt, ciperDecrypt)
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class FakeServer:
-    def __init__(self, ip, port, hostname):
+    def __init__(self, hass, ip, port, hostname):
+        self.hass = hass
         self.ip = ip
         self.port = port
         self.hostname = hostname
@@ -25,8 +27,16 @@ class FakeServer:
 
         self.connMap = {}
         self.haMap = {}
+        async_track_time_interval(
+            self.hass, self.heart_beat, timedelta(seconds=60))
 
         self.start()
+
+    def heart_beat(self, now):
+        for key in self.haMap.keys():
+            conn = self.haMap[key]
+            _LOGGER.info('* Server send heart beat to conn: {}'.format(conn))
+            conn.sendall(json.dumps({'t': 'hb'}).encode())
 
     def start(self):
         thread = threading.Thread(target=self.serve, args=())

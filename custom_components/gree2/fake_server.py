@@ -163,6 +163,14 @@ class FakeServer:
         else:
             _LOGGER.debug(
                 'Connection from device host: {} is not ready'.format(host))
+    
+    def cmd_ret(self, conn):
+        _LOGGER.info('    Ret request answer: {}'.format(conn))
+        (host, _) = conn.getpeername()
+        if host in self.haMap.keys():
+            msg = {'t': 'ret'}
+            conn = self.haMap[host]
+            conn.sendall(json.dumps(msg).encode())
 
     def process(self, data, conn):
         try:
@@ -185,6 +193,8 @@ class FakeServer:
                         self.cmd_pack(msg, conn)
                 case 'pas':
                     self.cmd_pas(msg, conn)
+                case 'ret':
+                    self.cmd_ret(conn)
 
         except Exception as e:
             _LOGGER.info('* Exception: {} on message {}'.format(e, str(data)))

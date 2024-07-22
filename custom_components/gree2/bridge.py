@@ -172,6 +172,8 @@ class GreeBridge(object):
                     self.cmd_dat(msg)
                 case 'res':
                     self.cmd_res(msg)
+                case 'ret':
+                    self.reset()
         except Exception as e:
             _LOGGER.info(
                 '* Exception: {} on message {}'.format(e, str(data)))

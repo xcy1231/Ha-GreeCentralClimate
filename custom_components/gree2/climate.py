@@ -42,6 +42,6 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
     temp_sensor = config.get(CONF_TEMP_SENSOR)
     temp_step = config.get(CONF_TEMP_STEP)
     if fake_server != '':
-        server = FakeServer(fake_server, 1812, 'dis.gree.com')
+        server = FakeServer(hass, fake_server, 1812, 'dis.gree.com')
     bridge = GreeBridge(hass, host, scan_interval,
                         temp_sensor, temp_step, async_add_devices)
